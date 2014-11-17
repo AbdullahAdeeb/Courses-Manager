@@ -1,0 +1,84 @@
+.viewBlock{
+    display: block;
+    width: 1800px;
+    height: 1000px;
+    padding: 20px;
+}
+
+.rightSidebar{
+    display: block;
+    border-style: solid;
+	margin-top:10px;
+    float: left;
+    height: auto;
+    width: 200px;
+    margin:10px;
+    padding:10px;
+}
+.table{
+    display: block;
+    float: left;
+/*    width: 1300px;*/
+    height: auto;  
+    border-style: solid;
+    margin-top:10px;
+
+}
+.year{
+	display:inline-block;
+    height: inherit;
+}
+.year#first{
+	background-color:rgba(255,255,100,1);
+}
+.year#second{
+	background-color:rgba(255,100,100,1);
+}
+.year#third{
+	background-color:rgba(100,255,100,1);
+}
+.year#fourth{
+	background-color:rgba(100,255,255,1);
+}
+.column{
+	border-style: dotted;
+	background-color:rgba(255,100,100,0.2);
+	margin: 4px;
+}
+.F{
+	float:left;
+}
+.W{
+	float:right;
+}
+.column ul{
+	padding:0px;
+	margin:0px;
+}
+.column h2{
+	text-align : center;
+}
+.course{
+	list-style-type: none;
+	padding:5px;
+	margin:10px;
+	border-style: outset;
+    width: 120px;
+    height: 120px;
+}
+.course p, h3{
+	margin:3px;
+    
+}
+
+.disabled{
+    background-color:rgba(162, 162, 162,1);
+    border-style: groove;
+}
+.disabled h3,p{
+    color: #656565;
+}
+.enabled{
+    background-color:rgba(255, 255, 255,0.8);
+}
+
