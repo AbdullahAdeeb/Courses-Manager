@@ -1,7 +1,6 @@
 var coursesArrayString="";
 var coursesArray=[];
 var checkedCourses=[];
-var registerCourses=[];
 var standing = 1;
 var major;
 
@@ -95,27 +94,22 @@ function getEnabledCourses(){
 
 function onclickNextButton(){
     var term = document.getElementById("regTerm").value;
+    var registerCourses = [];
 	for (var y=1; y<=4;y++){
 		var checkedRegister=getYearElement(y).getElementsByClassName("registerCheckbox");
 		for(var j=0; j<checkedRegister.length;j++){
 			if(checkedRegister[j].checked){                 //check the courses that the user marked as check
 			var registeredCourse=checkedRegister[j].parentNode.getAttribute('id').replace("_"," ");
-			this.registerCourses.push(registeredCourse);
+                registerCourses.push(registeredCourse);
             }
 	   }
 	}
-	request = new XMLHttpRequest();
-	request.open("POST","server.php" ,true);
-	request.setRequestHeader("content-type", "application/x-www-form-urlencoded");	
-	request.onreadystatechange = function(){
-		if(request.readyState == 4 && request.status == 200){
-			var timeTable = request.responseText;
-//            window.location='view2.php?timeTable='+timeTable;
-		}else if(request.readyState == 0){
-			alert("Error Connecting to the server, Refresh maybe!");
-		}	
-	}
-	request.send("typeofrequest=getTimeTable&registeredCourses="+JSON.stringify(registerCourses)+"&term="+term);
+    if(registerCourses.length ==0){
+        alert('no courses selected\n please check the courses to register in.');
+        return;
+    }
+    
+    window.location='view2.php?regCourses='+JSON.stringify(registerCourses)+"&term="+term;
 }
 
 //////////////////////////////////////////////
@@ -204,6 +198,7 @@ function displayCourseInfo(name){
 //Handler method when check box is check/unchecked
 //It will refresh the list checkedCourses
 function onCourseChecked(name){
+    
     this.checkedCourses=[];
     for(var y=1;y <=4;y++){
         var checkboxes = getYearElement(y).getElementsByClassName("courseCheckbox");//returning an array of all the elements that have "courseCheckbox" in it
@@ -218,7 +213,21 @@ function onCourseChecked(name){
 }
 
 function onRegisterChecked(name){
-    alert("Implement me: check if course available in term selected");
+    var term = document.getElementById("regTerm").value;
+    var course = getCourseFromArray(name);
+    for(var i = 0 ; i < course.info.length;i++){
+        if(course.info[i].TERM_OFFERED == term){
+            return true;
+        }
+    }
+    
+    // uncheck the registeration box as courses is not available
+    alert("course is not available in the term selected");
+    var course = document.getElementById(name.replace(" ","_"));
+    var regBox = course.getElementsByClassName("registerCheckbox")[0];
+    regBox.checked =false;
+    return false;
+    
 }
 
 function onStandingChange(value){

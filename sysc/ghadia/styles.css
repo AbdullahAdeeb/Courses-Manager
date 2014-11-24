@@ -1,3 +1,12 @@
+.controlBlock{
+	width: 1400px;
+	padding:10 px;
+}
+
+.controlBlock button{
+	float: right;
+}
+
 .viewBlock{
     display: block;
     width: 1800px;
@@ -64,9 +73,10 @@
 	margin:10px;
 	border-style: outset;
     width: 120px;
-    height: 120px;
+    height: auto;
 }
-.course p, h3{
+
+.course p, h4{
 	margin:3px;
     
 }
@@ -75,7 +85,7 @@
     background-color:rgba(162, 162, 162,1);
     border-style: groove;
 }
-.disabled h3,p{
+.disabled h4,p{
     color: #656565;
 }
 .enabled{

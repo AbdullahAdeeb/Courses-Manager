@@ -1,13 +1,29 @@
 <?php
+//$timeTableString=$_GET['timeTable'];
+//$timeTable=json_decode($timeTableString);
+
 
 ?>
+
 
 <html>
     <head>
     </head>
     <body>
-        <h1 id="whateverID"></h1>
-        
+       
+	<div id="schedule" name="schedule">
+
+	
+	
+	</div>	
+			
+		
+		
+		
+	
+		
+		
+	 
         <script src="functions2.js"></script>
         <script> 
              window.onload = function(){
@@ -16,6 +32,7 @@
                 getTimeTables(reg,term);
 //            console.log(document.cookie);
               }       
-        </script>           
+        </script>  
+       
     </body>
 </html>

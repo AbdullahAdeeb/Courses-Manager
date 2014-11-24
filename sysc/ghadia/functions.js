@@ -1,7 +1,9 @@
+var coursesArrayString="";
 var coursesArray=[];
 var checkedCourses=[];
+var registerCourses=[];
 var standing = 1;
-var schedule = "<br>";
+var major;
 
 ///////////////////////////////////
 /// FUNCTIONS TO BUILD THE TABLE //
@@ -48,26 +50,45 @@ function addCourses(arr){
 		a = arr[i];
         addCourse(a.YEAR,a.TERM,a.CRSE_ID,a.info[0].CATALOG_TITLE);  //(year,sem,name,desc)
 	}
-    updateCourses();
+//    getEnabledCourses();
 }
 
 
 ////////////////////////////////////////
-/// AJAX FUNCTION FOR GRABING COURSES///
+/// AJAX FUNCTIONs FOR GRABING COURSES///
 ///////////////////////////////////////
 function getCoursesFromDB(major){
+    this.major = major;
 	request = new XMLHttpRequest();
 	request.open("POST","server.php" ,true);
 	request.setRequestHeader("content-type", "application/x-www-form-urlencoded");	
 	request.onreadystatechange = function(){
 		if(request.readyState == 4 && request.status == 200){
 			// console.log(JSON.parse(request.responseText));
-			addCourses(JSON.parse(request.responseText))
+            coursesArrayString = request.responseText;
+			addCourses(JSON.parse(coursesArrayString)); // to grab all the courses and their info
+            getEnabledCourses();        // to enable/disable courses according to prerequsites 
 		}else if(request.readyState == 0){
 			alert("Error Connecting to the server, Refresh maybe!");
 		}	
 	}
 	request.send("typeofrequest=getCourses&major="+major);
+}
+
+//refresh all courses by enabling and disabling
+function getEnabledCourses(){
+    request = new XMLHttpRequest();
+	request.open("POST","server.php" ,true);
+	request.setRequestHeader("content-type", "application/x-www-form-urlencoded");	
+	request.onreadystatechange = function(){
+		if(request.readyState == 4 && request.status == 200){
+//			console.log(JSON.parse(request.responseText));
+            updateCourses(JSON.parse(request.responseText))
+		}else if(request.readyState == 0){
+			alert("Error Connecting to the server, Refresh maybe!");
+		}	
+	}
+	 request.send("typeofrequest=getSatisfiedCourses&major="+this.major+"&checkedCourses="+JSON.stringify(checkedCourses)+"&standing="+this.standing);
 }
 
 //////////////////////////////////////////////
@@ -76,18 +97,34 @@ function getCoursesFromDB(major){
 function disableCourseElement(name){
     var course = document.getElementById(name.replace(" ","_"));
     course.className = course.className.replace("enabled","disabled");
-    var cb = course.getElementsByClassName("courseCheckbox")[0];
-    cb.checked =false;
-    cb.disabled =true;
+    var doneCB = course.getElementsByClassName("courseCheckbox")[0];
+    var addCB = course.getElementsByClassName("registerCheckbox")[0];
+    doneCB.checked =false;
+    doneCB.disabled =true;
+    addCB.checked =false;
+    addCB.disabled =true;
 }
 
 function enableCourseElement(name){
     var course = document.getElementById(name.replace(" ","_"));
     course.className = course.className.replace("disabled","enabled");
-    var cb = course.getElementsByClassName("courseCheckbox")[0];
-    cb.disabled =false;
+    var doneCB = course.getElementsByClassName("courseCheckbox")[0];
+    var addCB = course.getElementsByClassName("registerCheckbox")[0];
+    
+    doneCB.disabled =false;
+    addCB.disabled =false;
 }
 
+function updateCourses(enabledCourses){
+    for(j=0; j<coursesArray.length;j++){
+        var name = getCourseNameFromArray(j)
+        if(enabledCourses.indexOf(name) == -1){
+            disableCourseElement(name);
+        }else{
+            enableCourseElement(name);
+        }   
+    }
+}
 
 //returns true if course is checked(taken), false otherwise.
 function isCourseElementChecked(name){
@@ -109,148 +146,14 @@ function getCourseFromArray(name){
     return "The course was not found in the list of courses!! Try clicking it again.";
 }
 
-//returns true if all course pre-requisites are satisfied, false otherwise.
-function isCourseSatisfied(name){
-    var course = getCourseFromArray(name);
-    var prereq = course.prereq;
-    if(prereq.PRE_CRSE == undefined || prereq.PRE_CRSE == ""){ // course has no prerequisites
-        return true;
-    }else{  // course has prerequisites and must be compared to checked
-        var preCrse = prereq.PRE_CRSE;            //parse the PRE_CRSE first 
-        preCrse = preCrse.replace("(",""); preCrse = preCrse.replace(")","");  // remove brackets
-        var preAnd = preCrse.split(" and ");    //get AND prerequisites
-        var sat = true;
-        
-        for (var i = 0; i< preAnd.length; i++){    
-            var preOR =  preAnd[i].split(" or ");     //get OR prerequisites
-            for(var j=0;j<preOR.length;j++){
-                if(checkedCourses.indexOf(preOR[j]) != -1){   // one of the OR is found
-                    break;
-                }
-                if(j == preOR.length-1){
-                    sat = false;
-                }
-            }
-            if(sat == false){
-                return false;
-            } 
-        }
-    }
-    return true;
 
-}
-
-//refresh all courses by enabling and disabling
-function updateCourses(){
-    for(var i=0;i<this.coursesArray.length;i++){
-        name = getCourseNameFromArray(i);
-        if(this.checkedCourses.indexOf(name) == -1 ){ // true: course is unchecked
-            //validate it's prereq with the checkedcourses
-            var sat = isCourseSatisfied(name);
-            if(sat){
-                //enable the course
-//                alert(i+">>"+name+">>"+sat);
-                enableCourseElement(name);
-            }else{
-                disableCourseElement(name);
-            }
-        }else{ // false: course is checked.. make sure it's enabled
-            enableCourseElement(name);
-        }
-    }
-}
-
-function courseAvailable(name, days){
-return true;}
-/*
-*info[0] = title; info[1]=courseNumber; info[2]=days; info[3]=endtime; info[4]=typeOfCourse;
-*info[5]=id; info[6]=roomCapacity; info[7]=section; info[8]=startTime; info[9]=courseName; info[10]=TermOffered
-
-CATALOG_TITLE: "Comm. Skills for Eng. Students"
-CRSE: "2100"
-DAYS: "W"
-END_TIME: "1725"
-INSTR_TYPE: "LEC"
-Id: "620"
-ROOM_CAP: "42"
-SEQ: "A"
-START_TIME: "1435"
-SUBJ: "CCDP"
-TERM_OFFERED: "F
-*/
-	/*var course = getCourseFromArray(name);
-	var roomCapacity = parseInt(course.info[ROOM_CAP]);
-	var day = course.info['DAYS'];
-	day = day.split("");
-	var startTime = pasreInt(courses.info["START_TIME"]);
-	var endTime = parseInt(courses.info["END_TIME"]);
-	
-	 if (roomCapacity != 0)
-	{
-		for ( i = startTime; i < endTime; i+=30){
-			//var temptime = i;
-			if (days
-		}
-	}else {
-		return false;
-	} 
-};*/
 
 
 /////////////////////////////////////
 ////HANDLERS FOR USER INTERACTIONS///
 /////////////////////////////////////
 function onAddToRegisterationList(name){
-	// Variable that will hold all the courses that were registered in
-	var registeredCourses = [];
-	// 2 variables that will create the timetable
-	var days= {/*'m':'','t':'','w':'','th':'','f':''*/};
-	var time = {};
-	time['830'] = '';
-	for ( i = 835; i < 2105; i+=30){
-		time[i.toString()] = '0';
-	};
-	days['m'] = time;
-	days['t'] = time;
-	days['w'] = time;
-	days['th'] = time;
-	days['f'] = time;
-    alert(name+" >> being implemented");
-		
-	// checking if the user meets the required standing year
-	if ( isCourseSatisfied(name))
-	{
-	alert('in the if statement');
-		// retrieving one course at a time
-		var course = getCourseFromArray(name);
-		// HAVING A PROBLEM IN RETREIVING ROOM CAPACITY AND DAY FROM COURSE//********************************************************************************/
-		//var roomCapacity = parseInt(course.info['ROOM_CAP']);
-		var roomCapacity = course.info['ROOM_CAP'];
-		var day = course.info['DAYS'];
-		alert('day is ' + day);
-		//var days = day.split('');
-		alert('room capacity ' + roomCapacity);
-		// checking available time and capacity
-		if (courseAvailable (name)){	
-			schedule += course.CRSE_ID + ";";
-			registeredCourses.push(course);
-			document.getElementById("coursesRegistered").innerHTML = schedule;
-		}
-	}else{
-		alert("You do not meet the minimum year standing!");
-	};
-	/*
-	These don't work
-	//alert ("arr[0] >>"+arr[0]);
-	//alert ("arr['CRSE_ID'] >>"+arr[CRSE_ID]);
-	alert ("arr[0].CRSE_ID>>"+arr[0].CRSE_ID);
-	*/
-	/*
-	coursesArray[0]
-	Object {CRSE_ID: "CCDP 2100", YEAR: "2", TERM: "F", info: Array[26], prereq: Object}
-	coursesArray[0].CRSE_ID
-	"CCDP 2100"
-	*/
+    alert(name+" >> not yet implemented");
 }
 
 function displayCourseInfo(name){
@@ -274,18 +177,45 @@ function displayCourseInfo(name){
 //Handler method when check box is check/unchecked
 //It will refresh the list checkedCourses
 function onCourseChecked(){
-    this.checkedCourses=[]
+    this.checkedCourses=[];
     for(var y=1;y <=4;y++){
-        var checkboxes = getYearElement(y).getElementsByClassName("courseCheckbox");
+        var checkboxes = getYearElement(y).getElementsByClassName("courseCheckbox");//returning an array of all the elements that have "courseCheckbox" in it
         for(j=0; j<checkboxes.length;j++){
-            if(checkboxes[j].checked){
-            var n = checkboxes[j].parentNode.getAttribute('id').replace("_"," ");
+            if(checkboxes[j].checked){ //**************************************** NOTE************************************************************* every checkbox input has .checked to see if its checked or not
+            var n = checkboxes[j].parentNode.getAttribute('id').replace("_"," ");//cant put space in html so put _
             this.checkedCourses.push(n);
             } 
         }
     }
-    updateCourses();
+    getEnabledCourses();
     
+}
+
+function onclickNextButton(){
+	for (var y=1; y<=4;y++){
+		var checkedRegister=getYearElement(y).getElementsByClassName("registerCheckbox");
+		for(var j=0; j<checkedRegister.length;j++){
+			if(checkedRegister[j].checked){                   //check the courses that the user marked as check
+			var registeredCourse=checkedRegister[j].parentNode.getAttribute('id').replace("_"," ");
+			this.registerCourses.push(registeredCourse);
+		
+		}
+	}
+	}
+	request = new XMLHttpRequest();
+	request.open("POST","server.php" ,true);
+	request.setRequestHeader("content-type", "application/x-www-form-urlencoded");	
+	request.onreadystatechange = function(){
+		if(request.readyState == 4 && request.status == 200){
+			var timeTable = request.responseText;
+            window.location='view2.php?timeTable='+timeTable;
+		}else if(request.readyState == 0){
+			alert("Error Connecting to the server, Refresh maybe!");
+		}	
+	}
+	 //request.send("typeofrequest=getSatisfiedCourses&major="+this.major+"&checkedCourses="+JSON.stringify(checkedCourses)+"&standing="+this.standing);
+	request.send("typeofrequest=getTimeTable&registeredCourses="+JSON.stringify(registerCourses));
+
 }
 
 function onStandingChange(value){

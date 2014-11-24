@@ -3,18 +3,81 @@ require_once("db.php");
 $db = new database();
 $request_type = $_POST['typeofrequest'];
 
-
+/////////////////////////////////////////////////
+/////            Request Handlers           ////
+////////////////////////////////////////////////
+$request_type = $_POST['typeofrequest'];
 
 if($request_type == "login"){
 		$login = $_POST['login'];
 		$password = $_POST['password'];
 		$major = $_POST['major'];
 		//start cookie here... no need to send major in header just put it in a cookie session
-		header("Location: coursestable.php?major=".$major);
+		header("Location: view1.php?major=".$major);
 
 }
-//fullname = CRSE_ID + name e.g) ELEC 2501
-// it is retrieved from db in on line 52
+
+if($request_type == "getCourses"){
+	$major = $_POST['major'];
+    $courses = getCourses($major);
+    
+	$allCoursesInfo = array();
+	foreach($courses as &$c){
+		$fullname = $c['CRSE_ID'];
+		$info = getCourseInfo($fullname);
+        $prereq = getCoursePrereq($fullname);
+        
+        $c['info']=$info;
+        $c['prereq']=$prereq;
+        $allCoursesInfo[] = $c;
+	}
+	echo json_encode($allCoursesInfo);
+}
+////$request_type = "getSatisfiedCourses";
+if($request_type == "getSatisfiedCourses"){
+
+    $major = $_POST['major'];
+    $yearStanding = $_POST['yearStanding'];
+    
+    $coursesArray = getCourses($major);
+    $enabledCouses = array();
+    $checkedCourses = json_decode($_POST['checkedCourses']);
+    for($c = 0; $c < sizeof($coursesArray);$c++){
+        $name = $coursesArray[$c]["CRSE_ID"];
+        if(!in_array($name,$checkedCourses)){     // false: course is unchecked
+            //validate it's prereq with the checkedcourses
+             
+            $sat = isCourseSatisfied($name,$checkedCourses) && isPreqYearSat($name,$yearStanding);
+            if($sat){
+                array_push($enabledCouses,$name);
+            }else{
+            }
+        }else{ // True: course is in checkedCourses.. make sure it's enabled
+            array_push($enabledCouses,$name);
+        }
+        
+    }
+    echo json_encode($enabledCouses);
+}
+
+//$request_type = "getTimeTable";
+if($request_type == "getTimeTable"){
+//    header("Location: view2.php");
+    
+}
+
+
+///////////////////////////////////////////////
+//                  FUCNTIONS               ///
+///////////////////////////////////////////////
+
+function getCourses($m){
+    global $db;
+    $sql="SELECT * FROM ".$m;
+	$c = $db->execute($sql);
+    return $c;
+}
+
 function getCourseInfo($fullname){
 	global $db;
 	$dept = explode(" ",$fullname)[0];
@@ -29,19 +92,6 @@ function getCourseInfo($fullname){
     return $resultInfo;
 }
 
-function getCourseLabs($fullname){
-	global $db;
-	$dept = explode(" ",$fullname)[0];
-	$idnum = explode(" ",$fullname)[1];
-    
-    //Query the general course information like LABS
-	$sql="SELECT * FROM courses where SUBJ LIKE '".$dept."' AND CRSE=".$idnum." AND INSTR_TYPE LIKE 'LAB'" ;
-	$resultInfo = $db->execute($sql);
-    if(sizeof($resultInfo) == 0){
-        $resultInfo[0]="Unable to find course info";
-    }
-    return $resultInfo;
-}
 
 function getCoursePrereq($fullname){
     global $db;
@@ -57,50 +107,81 @@ function getCoursePrereq($fullname){
     return $resultprereq[0];
 }
 
-if($request_type == "getCourses"){
-	$major = $_POST['major'];
-	$sql="SELECT * FROM ".$major;//Get all the courses from DATABASE not table (doesnt make sense that its from DATABASE and not table)
-	$courses = $db->execute($sql);
+function isPreqYearSat($courseName,$yearStand){
+	$prereq = getCoursePrereq($courseName);
+	$prereqYear = trim($prereq['PRE_YEAR']);
+	//echo json_encode($prereq) . PHP_EOL;
 	
-	// $jcourses= json_encode($courses);
-	$allCoursesInfo = array();
-	foreach($courses as &$c){
-		$fullname = $c['CRSE_ID'];
-		$info = getCourseInfo($fullname);//get all
-		$labs=getCourseLabs($fullname);
-        $prereq = getCoursePrereq($fullname);
-        
-        $c['info']=$info;
-        $c['prereq']=$prereq;
-		$c['labs']=$labs;
-        $allCoursesInfo[] = $c; //only what I want I disregard everything else (extract only what I need) allCoursesInfo has info,prereq  (array of arrays)
+ 	if ($prereq['PRE_YEAR'] == 0){
+		return true;
+	} 
+	
+	if ($prereq['PRE_YEAR'] <= $yearStand -1){
+		return true;
+	}else{
+		return false;
 	}
-
-	echo json_encode($allCoursesInfo); //from server to file must do json encode (in server) in client json(parse)
-	
 }
+
+
+function isCourseSatisfied($courseName,$checkedCourses){
+	$prereq = getCoursePrereq($courseName);
+    if(($prereq["PRE_CRSE"] == undefined || $prereq["PRE_CRSE"] == '')){
+        return True;
+    }else{
+        
+        $preCrse = $prereq["PRE_CRSE"];            //parse the PRE_CRSE first 
+        $preCrse = str_replace('(','',$preCrse);$preCrse = str_replace(')','',$preCrse);
+        $preAnd = explode(' and ',$preCrse);    //get AND prerequisites
+        $sat = True;   
+        for($i = 0; $i< sizeof($preAnd); $i++){
+            $preOR = explode(' or ',$preAnd[$i]);      //get OR prerequisites
+            for($j=0; $j < sizeof($preOR); $j++){
+                if(in_array($preOR[$j],$checkedCourses)){  // one of the OR is found
+                    break;
+                }
+                if($j == (sizeof($preOR)-1)){
+                   $sat = False;
+                }
+            }
+            if($sat == False){
+                return False;
+            }
+        }
+    }
+    return True;
+}
+
+
+
+
+	
+
+
 
 // // FOR TESTING ONLY
-$request_type = $_GET['typeofrequest'];
-if($request_type == "test"){
-	$major = "sysc";
-	$sql="SELECT * FROM ".$major;
-	$courses = $db->execute($sql);
-	
-	// $jcourses= json_encode($courses);
-	$allCoursesInfo = array();
-	foreach($courses as &$c){
-		$fullname = $c['CRSE_ID'];
-		$info = getCourseInfo($fullname);
-		if(sizeof($info)==0){ // if course is not found in the big course table
-			$allCoursesInfo[] = $c;
-		}else{
-			$allCoursesInfo[] = array_merge($c,$info);
-		}
-	}
+//$request_type = $_GET['typeofrequest'];
+//if($request_type == "test"){
+//	$major = "sysc";
+//	$sql="SELECT * FROM ".$major;
+//	$courses = $db->execute($sql);
+//	
+//	// $jcourses= json_encode($courses);
+//	$allCoursesInfo = array();
+//	foreach($courses as &$c){
+//		$fullname = $c['CRSE_ID'];
+//		$info = getCourseInfo($fullname);
+//		if(sizeof($info)==0){ // if course is not found in the big course table
+//			$allCoursesInfo[] = $c;
+//		}else{
+//			$allCoursesInfo[] = array_merge($c,$info);
+//		}
+//	}
+//
+//	echo json_encode($allCoursesInfo);
+//	
+//}
 
-	echo json_encode($allCoursesInfo);
-	
-}
+
 
 ?>

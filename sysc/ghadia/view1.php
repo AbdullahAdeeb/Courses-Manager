@@ -1,42 +1,27 @@
+<?php
 
-<html v=2>
+$major = $_GET['major'];
+
+?>
+<html>
  <link rel="stylesheet" type="text/css" href="styles.css">
 <head>
 <title>Courses Table</title>
 </head>
 <body>
-    <?php
-
-        $major = $_GET['major'];
-        if($major ==""){
-            echo "<h1>Illegal Access to the page</h1>";
-            echo "<p>Please go back to the index page and try again.</p>";
-        }else{
-            
-    ?>
-    
-	<div class="controlBlock">
-        <div>
-            <h3>Select your year standing:</h3>
-            <select name="standing" id="standing" onchange="onStandingChange(this.value)">
-                <option value="1">First Year</option>
-                <option value="2">Second Year</option>
-                <option value="3">Third Year</option>
-                <option value="4">Fourth Year</option>
-            </select> 
-        </div>
-        <div>
-            <h3>Term to register in:</h3>
-            <select name="regTerm" id="regTerm">
-                <option value="F">Fall Term</option>
-                <option value="W">Winter Term</option>
-            </select> 
-        </div>
+<h1>Courses Table</h1>
+	<br>
+	<div class="controlBlock">Select your year standing:
+		<select name="standing" id="standing" onchange="onStandingChange(this.value)">
+			<option value="1">First Year</option>
+			<option value="2">Second Year</option>
+			<option value="3">Third Year</option>
+			<option value="4">Fourth Year</option>
+		</select> 
         <button class="nextButton" onclick="onclickNextButton()">Next</button> 
 	</div>
-    
+	<br>
     <div class="viewBlock">
-        <h1>Courses Table</h1>
         <div class="table" >
             <div class="year" id="first">
                 <h2><center>First year</center></h2>
@@ -96,7 +81,7 @@
             <p id="courseInfo">Click on course for details</p>
         </div>
     </div>
-<!--	<hr>-->
+	<hr>
  	<ul class="template" style="display:none;">
 		<li class="course sysc enabled" id="sysc">
             <a class="courseLink" href="#"><h4 class="courseTitle">course name</h4></a>
@@ -118,9 +103,6 @@
 
 		}
 	</script>
-	<?php
-     }//Else end 
-    ?>
+	
 </body>
-    
 </html>
