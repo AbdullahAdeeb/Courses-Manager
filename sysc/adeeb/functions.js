@@ -1,9 +1,9 @@
-var coursesArray= new Object();
+var coursesArrayString="";
+var coursesArray=[];
 var checkedCourses=[];
+var registerCourses = [];
 var standing = 1;
 var major;
-var registerCourses = [];
-var registerElectives =  new Object();
 
 
 ////////////////////////////////////////
@@ -17,7 +17,7 @@ function getCoursesFromDB(major){
 	request.onreadystatechange = function(){
 		if(request.readyState == 4 && request.status == 200){
 			// console.log(JSON.parse(request.responseText));
-            var coursesArrayString = request.responseText;
+            coursesArrayString = request.responseText;
 			addCourses(JSON.parse(coursesArrayString)); // to grab all the courses and their info
             getEnabledCourses();        // to enable/disable courses according to prerequsites 
 		}else if(request.readyState == 0){
@@ -50,12 +50,8 @@ function addCourses(arr){
     this.coursesArray = arr;
 	for(var i = 0; i < arr.length; i++){
 		a = arr[i];
-        if(a.CRSE_ID.indexOf('COMP') != -1 || a.CRSE_ID.indexOf('ENGE') != -1){
-            addElective(a.YEAR,a.TERM,a.CRSE_ID)
-        }else{
-            addCourse(a.YEAR,a.TERM,a.CRSE_ID,a.info[0].CATALOG_TITLE);  //(year,sem,name,desc)
-        }
-    }
+        addCourse(a.YEAR,a.TERM,a.CRSE_ID,a.info[0].CATALOG_TITLE);  //(year,sem,name,desc)
+	}
 }
 
 function addCourse(year,sem,name,desc){
@@ -82,28 +78,6 @@ function addCourse(year,sem,name,desc){
 	}	
 }
 
-function addElective(year,sem,name){
-	var yearElement = getYearElement(year);
-	
-	// get the new course from the template
-	var newCourse = document.getElementById("elective").cloneNode(true); //change this later to get specific course i.e"sysc"
-	newCourse.setAttribute("id",name.replace(" ","_"));
-	newCourse.getElementsByClassName("courseTitle")[0].innerHTML = name;
-	newCourse.getElementsByClassName("courseDescription")[0].innerHTML = "Elective course";
-    newCourse.getElementsByClassName("courseLink")[0].setAttribute("href","javascript:displayElectivesInfo('"+name+"')");
-    newCourse.getElementsByClassName("showElectives")[0].setAttribute("href","javascript:displayElectivesInfo('"+name+"')");
-	
-	var courses;
-	if(sem == 'F'){
-		courses = yearElement.getElementsByClassName("F")[0].getElementsByClassName("courses")[0];
-		courses.appendChild(newCourse);
-	}else if(sem == 'W' ){
-		courses = yearElement.getElementsByClassName("W")[0].getElementsByClassName("courses")[0];
-		courses.appendChild(newCourse);
-	}else{
-		alert("course without a term");
-	}	
-}
 
 
 
@@ -124,8 +98,6 @@ function getYearElement(year){
 }
 
 function disableCourseElement(name){
-    if(name.indexOf("COMP") != -1 || name.indexOf("ENGE") != -1)return;
-    
     var course = document.getElementById(name.replace(" ","_"));
     course.className = course.className.replace("enabled","disabled");
     var doneCB = course.getElementsByClassName("courseCheckbox")[0];
@@ -137,8 +109,6 @@ function disableCourseElement(name){
 }
 
 function enableCourseElement(name){
-    if(name.indexOf("COMP") != -1 || name.indexOf("ENGE") != -1)return;
-    
     var course = document.getElementById(name.replace(" ","_"));
     course.className = course.className.replace("disabled","enabled");
     var doneCB = course.getElementsByClassName("courseCheckbox")[0];
@@ -179,6 +149,12 @@ function getCourseFromArray(name){
     return "The course was not found in the list of courses!! Try clicking it again.";
 }
 
+
+
+
+/////////////////////////////////////
+////HANDLERS FOR USER INTERACTIONS///
+/////////////////////////////////////
 function displayCourseInfo(name){
     var course = getCourseFromArray(name);
     var info ="<br>";
@@ -196,58 +172,9 @@ function displayCourseInfo(name){
     document.getElementById("courseInfo").innerHTML = info;
 }
 
-function displayElectivesInfo(name){
-    document.getElementById("courseInfoTitle").innerHTML = name;
-
-    var course = getCourseFromArray(name);
-    document.getElementById("courseInfo").innerHTML = "<br>";
-
-    var noneRadio = document.createElement("INPUT");
-    noneRadio.setAttribute("type", "radio");
-    noneRadio.setAttribute("name",name);
-    noneRadio.setAttribute("onclick","onElectiveSelect('"+name+"',this);");
-    noneRadio.setAttribute("value","none");
-    noneRadio.setAttribute("checked",true);
-    document.getElementById("courseInfo").appendChild(noneRadio);
-    document.getElementById("courseInfo").innerHTML += "<b>None</b><br><hr>";
-    
-    var isSet = false;
-    if(registerElectives[name] != undefined){
-        isSet = true;
-    }
-    for(var i = 0; i < course.info.length; i++){
-        var mRadio = document.createElement("INPUT");
-        mRadio.setAttribute("type", "radio");
-        mRadio.setAttribute("name",name);
-        mRadio.setAttribute("onclick","onElectiveSelect('"+name+"',this);");
-        mRadio.setAttribute("value",course.info[i].SUBJ+' '+course.info[i].CRSE);
-        if(registerElectives[name] == course.info[i].SUBJ+' '+course.info[i].CRSE){
-            mRadio.setAttribute("checked",true);
-        }
-        document.getElementById("courseInfo").appendChild(mRadio);
-        var info =
-            "<b>"+course.info[i].SUBJ+' '+course.info[i].CRSE+"</b>"+
-            "<br><b>Description:</b> "+course.info[i].CATALOG_TITLE+
-            "<hr>";
-        document.getElementById("courseInfo").innerHTML += info;
-
-    }
-
-}
-
-
-
-/////////////////////////////////////
-////HANDLERS FOR USER INTERACTIONS///
-/////////////////////////////////////
 //Handler method when check box is check/unchecked
-//It will update the list checkedCourses
+//It will refresh the list checkedCourses
 function onCourseChecked(n){
-	if(registerCourses.indexOf(n)!=-1){
-		alert("Can't be done with a course you're regisrering in");
-		document.getElementById(n.replace(" ","_")).getElementsByClassName("courseCheckbox")[0].checked=false;
-		return;
-	}
     var id = n.replace(" ","_");
     var courseElem = document.getElementById(id);
     var checkBox = courseElem.getElementsByClassName("courseCheckbox")[0];
@@ -263,12 +190,6 @@ function onCourseChecked(n){
 }
 
 function onRegisterChecked(name){
-
-	if(checkedCourses.indexOf(name)!=-1){
-		alert("Can't register in done course");
-		document.getElementById(name.replace(" ","_")).getElementsByClassName("registerCheckbox")[0].checked=false;
-		return;
-	}
     var term = document.getElementById("regTerm").value;
     var course = getCourseFromArray(name);
     for(var i = 0 ; i < course.info.length;i++){
@@ -290,26 +211,6 @@ function onRegisterChecked(name){
     regBox.checked =false;
     return false;
     
-}
-
-function onElectiveSelect(name, courseRadio){
-    console.log(name);
-    var elemID = name.replace(" ","_");
-    if(courseRadio.value == 'none'){
-        document.getElementById(elemID).getElementsByClassName("registerCheckbox")[0].checked = false;
-        delete registerElectives[name];
-        
-    }else{
-        for(var key in registerElectives){
-            if(registerElectives[key].indexOf(courseRadio.value) != -1){
-                alert("This elective is already registered in another term");
-                displayElectivesInfo(name);
-                return;
-            }
-        }
-        document.getElementById(elemID).getElementsByClassName("registerCheckbox")[0].checked = true;
-        registerElectives[name] = courseRadio.value;
-    }
 }
 
 function onStandingChange(value){
@@ -336,31 +237,26 @@ function onStandingChange(value){
 
 function onclickNextButton(){
     var term = document.getElementById("regTerm").value;
-//    var registerCourses = []; 
-//	for (var y=1; y<=4;y++){
-//		var checkedRegister=getYearElement(y).getElementsByClassName("registerCheckbox");
-//		for(var j=0; j<checkedRegister.length;j++){
-//			if(checkedRegister[j].checked){                 //check the courses that the user marked as check
-//			var registeredCourse=checkedRegister[j].parentNode.getAttribute('id').replace("_"," ");
-//                registerCourses.push(registeredCourse);
-//            }
-//	   }
-//	}
-    
-    //add the selected for registeration electives to the register courses list
-    for(var name in registerElectives){
-        registerCourses.push(registerElectives[name]);
-    }
-    
+    var registerCourses = [];
+	for (var y=1; y<=4;y++){
+		var checkedRegister=getYearElement(y).getElementsByClassName("registerCheckbox");
+		for(var j=0; j<checkedRegister.length;j++){
+			if(checkedRegister[j].checked){                 //check the courses that the user marked as check
+			var registeredCourse=checkedRegister[j].parentNode.getAttribute('id').replace("_"," ");
+                registerCourses.push(registeredCourse);
+            }
+	   }
+	}
     if(registerCourses.length ==0){
         alert('no courses selected\n please check the courses to register in.');
         return;
-    }    
+    }
+    
+    
     window.location='view2.php?regCourses='+JSON.stringify(registerCourses)+"&term="+term;
 }
 
 function onTermChange(){
-	regsiterCourses=[];
     var regBox = document.getElementsByClassName("registerCheckbox");
     for (var i=0; i<regBox.length;i++){
         regBox[i].checked = false;

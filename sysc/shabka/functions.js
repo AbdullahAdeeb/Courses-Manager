@@ -1,7 +1,7 @@
 var coursesArrayString="";
 var coursesArray=[];
 var checkedCourses=[];
-var registerCourses=[];
+var registerCourses = [];
 var standing = 1;
 var major;
 
@@ -90,42 +90,7 @@ function getEnabledCourses(){
 			alert("Error Connecting to the server, Refresh maybe!");
 		}	
 	}
-	 request.send("typeofrequest=getSatisfiedCourses&major="+this.major+"&checkedCourses="+JSON.stringify(checkedCourses)+"&standing="+this.standing);
-}
-
-function onclickNextButton(){
-    var term = document.getElementById("regTerm").value;
-	for (var y=1; y<=4;y++){
-		var checkedRegister=getYearElement(y).getElementsByClassName("registerCheckbox");
-		for(var j=0; j<checkedRegister.length;j++){
-			if(checkedRegister[j].checked){                 //check the courses that the user marked as check
-			var registeredCourse=checkedRegister[j].parentNode.getAttribute('id').replace("_"," ");
-			this.registerCourses.push(registeredCourse);
-            }
-	   }
-	}
-    if(registerCourses.length ==0){
-        alert('no courses selected\n please check the courses to register in.');
-        return;
-    }
-    
-    window.location='view2.php?regCourses='+JSON.stringify(registerCourses)+"&term="+term;
-    
-//	request = new XMLHttpRequest();
-//	request.open("POST","server.php" ,true);
-//	request.setRequestHeader("content-type", "application/x-www-form-urlencoded");	
-//	request.onreadystatechange = function(){
-//		if(request.readyState == 4 && request.status == 200){
-//			var timeTable = request.responseText;
-//            document.cookie ="timetable="+timeTable+"; path=/view2.php";
-//            window.location='view2.php';
-////            document.body.innerHTML = timeTable;
-//
-//		}else if(request.readyState == 0){
-//			alert("Error Connecting to the server, Refresh maybe!");
-//		}	
-//	}
-//	request.send("typeofrequest=getTimeTable&registeredCourses="+JSON.stringify(registerCourses)+"&term="+term);
+	 request.send("typeofrequest=getSatisfiedCourses&major="+this.major+"&checkedCourses="+JSON.stringify(this.checkedCourses)+"&registerCourses="+JSON.stringify(this.registerCourses)+"&standing="+this.standing);
 }
 
 //////////////////////////////////////////////
@@ -214,17 +179,13 @@ function displayCourseInfo(name){
 //Handler method when check box is check/unchecked
 //It will refresh the list checkedCourses
 function onCourseChecked(name){
-    
-    this.checkedCourses=[];
-    for(var y=1;y <=4;y++){
-        var checkboxes = getYearElement(y).getElementsByClassName("courseCheckbox");//returning an array of all the elements that have "courseCheckbox" in it
-        for(j=0; j<checkboxes.length;j++){
-            if(checkboxes[j].checked){ //**************************************** NOTE************************************************************* every checkbox input has .checked to see if its checked or not
-            var n = checkboxes[j].parentNode.getAttribute('id').replace("_"," ");//cant put space in html so put _
-            this.checkedCourses.push(n);
-            } 
-        }
+    var index = this.checkedCourses.indexOf(name);
+    if(index == -1){
+        this.checkedCourses.push(name)
+    }else{
+        this.checkedCourses.splice(index,1);
     }
+
     getEnabledCourses();
 }
 
@@ -233,10 +194,16 @@ function onRegisterChecked(name){
     var course = getCourseFromArray(name);
     for(var i = 0 ; i < course.info.length;i++){
         if(course.info[i].TERM_OFFERED == term){
+            var index = this.registerCourses.indexOf(name);
+            if(index == -1){
+                this.registerCourses.push(name)
+            }else{
+                this.registerCourses.splice(index,1);
+            }
+            getEnabledCourses();
             return true;
         }
     }
-    
     // uncheck the registeration box as courses is not available
     alert("course is not available in the term selected");
     var course = document.getElementById(name.replace(" ","_"));
@@ -264,4 +231,32 @@ function onStandingChange(value){
         }
     }
     onCourseChecked();
+}
+
+function onclickNextButton(){
+    var term = document.getElementById("regTerm").value;
+    var registerCourses = [];
+	for (var y=1; y<=4;y++){
+		var checkedRegister=getYearElement(y).getElementsByClassName("registerCheckbox");
+		for(var j=0; j<checkedRegister.length;j++){
+			if(checkedRegister[j].checked){                 //check the courses that the user marked as check
+			var registeredCourse=checkedRegister[j].parentNode.getAttribute('id').replace("_"," ");
+                registerCourses.push(registeredCourse);
+            }
+	   }
+	}
+    if(registerCourses.length ==0){
+        alert('no courses selected\n please check the courses to register in.');
+        return;
+    }
+    
+    
+    window.location='view2.php?regCourses='+JSON.stringify(registerCourses)+"&term="+term;
+}
+
+function onTermChange(){
+    var regBox = document.getElementsByClassName("registerCheckbox");
+    for (var i=0; i<regBox.length;i++){
+        regBox[i].checked = false;
+	}
 }

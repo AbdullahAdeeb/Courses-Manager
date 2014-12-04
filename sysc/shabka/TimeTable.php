@@ -36,7 +36,7 @@ class Timetable{
                     $lecture = $lectures[$le];
 //                    echo '           $lecture>'.$lecture['Id'];
 //                    print_r($table);
-                    if($this->isTimeAvailable($table,$lecture)){
+                    if(!$this->isSessionFull($lecture) && $this->isTimeAvailable($table,$lecture)){
 //                        echo '   :: true>'.PHP_EOL;
                         $newTable = $table;
                         $this->addToTable($newTable,$lecture);
@@ -48,7 +48,7 @@ class Timetable{
                             $this->buildTable($newTable,$coursesLeft);
                         }else{
                             for($la = 0; $la < sizeof($labs); $la++){  // tryout every lab for the registered lecture
-                                if($this->isTimeAvailable($newTable,$labs[$la])){
+                                if(!$this->isSessionFull($labs[$la]) && $this->isTimeAvailable($newTable,$labs[$la])){
                                     $anotherTable = $newTable;
                                     $this->addToTable($anotherTable,$labs[$la]);
                                     $coursesLeft = $courses;
@@ -213,20 +213,20 @@ class Timetable{
         return ($asize < $bsize) ? -1 : 1;
     }
     
-//    private function getUniqueSolutions(&$array){
-//        
-////        for ($i = 0; $i < sizeof($array) - 1; $i++){
-////            for ($j = $i+1; $j < sizeof($array); $j++){
-////                if(sizeof(array_diff($array[$i],$array[$j])) == 0){
-////                    // arrays are identical
-////                    unset($array[$i]);
-////                    echo '('.$i.'-'.$j.')';
-//////                    if($i != 0){
-//////                        $i--;
-//////                    }
-////                }
-////            }
-////        }
-//    } 
+    // checkes if a course capacity is full by using room_cap - reg_count
+    // true: course is full
+    // false: course is not full
+    function isSessionFull($session){
+        $cap = $session['ROOM_CAP'];
+        $reg = $session['REG_COUNT'];
+        
+        // when cap is zero it means there is no limit on the course, and always not full
+        // when the registeration didn't reach the cap, then there is spots left for registeration
+        if($cap == 0 || ($cap - $reg)>=0){ 
+            return false; // course not full
+        }
+        return true;    // course is full
+    }
+
 }
 ?>

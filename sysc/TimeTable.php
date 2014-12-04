@@ -36,7 +36,7 @@ class Timetable{
                     $lecture = $lectures[$le];
 //                    echo '           $lecture>'.$lecture['Id'];
 //                    print_r($table);
-                    if($this->isTimeAvailable($table,$lecture)){
+                    if(!$this->isSessionFull($lecture) && $this->isTimeAvailable($table,$lecture)){
 //                        echo '   :: true>'.PHP_EOL;
                         $newTable = $table;
                         $this->addToTable($newTable,$lecture);
@@ -48,14 +48,14 @@ class Timetable{
                             $this->buildTable($newTable,$coursesLeft);
                         }else{
                             for($la = 0; $la < sizeof($labs); $la++){  // tryout every lab for the registered lecture
-                                if($this->isTimeAvailable($newTable,$labs[$la])){
+                                if(!$this->isSessionFull($labs[$la]) && $this->isTimeAvailable($newTable,$labs[$la])){
                                     $anotherTable = $newTable;
                                     $this->addToTable($anotherTable,$labs[$la]);
                                     $coursesLeft = $courses;
                                     unset($coursesLeft[$name]);
                                     $this->buildTable($anotherTable,$coursesLeft);
                                 } //end if labAvailable
-                                if(sizeof($this->allTabels) >= 10){ //limit the solutions to 10 only
+                                if(sizeof($this->allTabels) >= 5){ //limit the solutions to 5 only
                                     return;
                                 }
                             }// end for labs
@@ -107,14 +107,10 @@ class Timetable{
         $end['hours'] = floor($end['orig']/100) + ($end['orig']%100)/60;
             
         $days = str_split($session['DAYS']);
-        
-//        echo 'Add id ='.$session['Id'].PHP_EOL;
-//        print_r($days);
-//        echo $start['hours'] .'-'. $end['hours'].PHP_EOL;
-            
+                    
         for ($i = 0; $i < sizeof($days); $i++){
             for($t = $start['hours'] ; $t < $end['hours']; $t+=0.5){
-                $table[$days[$i]][strval($t)] = $session['Id']; // set time slot to full=True
+                $table[$days[$i]][strval($t)] = array("Id" => $session['Id'],"name" => $session['SUBJ'].' '.$session['CRSE'].'-'.$session['SEQ']); // set time slot to not false by filling it
             }     
         }    
     }
@@ -181,6 +177,16 @@ class Timetable{
         }
         return $arr;
     }
+   
+    function dayDiff($one,$two){
+        foreach($one as $key => $slot){
+            if($slot['Id'] != $two[$key]['Id']){
+                return True;
+            }
+        }
+        return False;
+    
+    }
     
     private function isTableNew($table){
         $all = $this->allTabels;
@@ -189,7 +195,8 @@ class Timetable{
         for ($i = 0; $i < sizeof($all); $i++){  
             $diff = array();
             for($j = 0; $j < sizeof($keys); $j++){
-                $diff[] = array_diff($all[$i][$keys[$j]],$table[$keys[$j]]);
+//                $diff[] = array_diff($all[$i][$keys[$j]],$table[$keys[$j]]);
+                $diff[] = $this->dayDiff($all[$i][$keys[$j]],$table[$keys[$j]]);
             }
             $unique = False;
             for($d=0;$d<sizeof($diff);$d++){
@@ -206,6 +213,7 @@ class Timetable{
         return True;
     }
     
+
     //compare function to be used for uksort() to sort courses array starting from course with less sections(lecture+labs) 
     private static function cmp($a,$b){
         $asize = sizeof($a);
@@ -213,20 +221,20 @@ class Timetable{
         return ($asize < $bsize) ? -1 : 1;
     }
     
-//    private function getUniqueSolutions(&$array){
-//        
-////        for ($i = 0; $i < sizeof($array) - 1; $i++){
-////            for ($j = $i+1; $j < sizeof($array); $j++){
-////                if(sizeof(array_diff($array[$i],$array[$j])) == 0){
-////                    // arrays are identical
-////                    unset($array[$i]);
-////                    echo '('.$i.'-'.$j.')';
-//////                    if($i != 0){
-//////                        $i--;
-//////                    }
-////                }
-////            }
-////        }
-//    } 
+    // checkes if a course capacity is full by using room_cap - reg_count
+    // true: course is full
+    // false: course is not full
+    function isSessionFull($session){
+        $cap = $session['ROOM_CAP'];
+        $reg = $session['REG_COUNT'];
+        
+        // when cap is zero it means there is no limit on the course, and always not full
+        // when the registeration didn't reach the cap, then there is spots left for registeration
+        if($cap == 0 || ($cap - $reg)>=0){ 
+            return false; // course not full
+        }
+        return true;    // course is full
+    }
+
 }
 ?>

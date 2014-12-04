@@ -16,7 +16,7 @@ class Database{
 	}
 
 	function execute($sql){
-//         echo	$sql; // FOR TESTING ONLY
+        //	 echo	$sql; // FOR TESTING ONLY
 		 if($result = $this->connection->query($sql)){
 			$rows = array();
 			while($r = $result->fetch_assoc()) {
@@ -27,8 +27,6 @@ class Database{
 			return $this->connection->error;
 		 }
 	}
-    
-    
     
     function getCourses($m){
         $sql="SELECT * FROM ".$m;
@@ -65,8 +63,11 @@ function getCourseInfo($fullname){
 				$courseName = explode(' ',$elveCourses[$i]['CRSE_ID']);
 				$crse=$courseName[0];
 				$crseID=$courseName[1];
-				$sql="SELECT SUBJ,CRSE,CATALOG_TITLE FROM courses where SUBJ LIKE '".$crse."' AND CRSE=".$crseID." AND INSTR_TYPE LIKE 'LEC'" ;
+				//echo "   ".$crse."    ";
+				//$sql="SELECT * FROM courses WHERE SUBJ LIKE '".$crse."' AND CRSE=".$crseID." AND INSTR_TYPE LIKE 'LEC'" ;
+				$sql="SELECT * FROM courses where SUBJ LIKE '".$crse."' AND CRSE=".$crseID." AND INSTR_TYPE LIKE 'LEC'" ;
 				$resultInfo[$i] = $this->execute($sql)[0];
+				//$resultInfo[0]="dept variable is either comp or enge";
 			}
 		}else{
         	//Query the general course information i.e. timing and capacity
@@ -116,28 +117,24 @@ function getCourseInfo($fullname){
         //incremeant reg_count when course is not full
         if(!$this->isCourseFull($courseID)){
             $sql = "UPDATE courses SET REG_COUNT = REG_COUNT + 1 WHERE Id=".$courseID;
-            if($result = $this->connection->query($sql)){
-                return True;
-             }else{//we have an error, return the error message for the query
-                return False;
-             }
-            
+            $resultInfo = $this->execute($sql);
+            return true;
         }
-        return False;
+        return false;
     }
     
     // checkes if a course capacity is full by using room_cap - reg_count
     // true: course is full
     // false: course is not full
     function isCourseFull($courseID){
-        $sql="SELECT * FROM courses WHERE Id = ".$courseID;
+        $sql="SELECT * FROM courses where Id =".$courseID;
         $resultInfo = $this->execute($sql);
-        $cap = $resultInfo[0]['ROOM_CAP'];
-        $reg = $resultInfo[0]['REG_COUNT'];
+        $cap = $resultInfo['ROOM_CAP'];
+        $reg = $resultInfo['REG_COUNT'];
         
         // when cap is zero it means there is no limit on the course, and always not full
         // when the registeration didn't reach the cap, then there is spots left for registeration
-        if($cap == 0 || ($cap-$reg) > 0){ 
+        if($cap == 0 || ($cap-$reg)==0){ 
             return false; // course not full
         }
         return true;    // course is full

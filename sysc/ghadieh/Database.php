@@ -1,5 +1,4 @@
 <?php
-//echo 'Database<br>';
 class Database{
 
 	function __construct(){
@@ -39,10 +38,27 @@ class Database{
 
         $dept = explode(" ",$fullname)[0];
         $idnum = explode(" ",$fullname)[1];
-
-        //Query the general course information i.e. timing and capacity
-        $sql="SELECT * FROM courses where SUBJ LIKE '".$dept."' AND CRSE=".$idnum." AND INSTR_TYPE LIKE 'LEC'" ;
-        $resultInfo = $this->execute($sql);
+		
+		if (strcmp($dept, 'COMP') || strcmp($dept, 'ENGE')){ // get elective courses
+			$sql="SELECT * FROM elve where CAT LIKE '".$dept."'";
+			$elveCourses = $this->execute($sql);
+			
+			//$resultInfo = array();
+			for ($i = 0; $i < sizeof($elveCourses); $i++){
+				$courseName = explode(' ',$elveCourses[$i]['CRSE_ID']);
+				$crse=$courseName[0];
+				$crseID=$courseName[1];
+				//echo "   ".$crse."    ";
+				//$sql="SELECT * FROM courses WHERE SUBJ LIKE '".$crse."' AND CRSE=".$crseID." AND INSTR_TYPE LIKE 'LEC'" ;
+				$sql="SELECT * FROM courses where SUBJ LIKE '".$crse."' AND CRSE=".$crseID." AND INSTR_TYPE LIKE 'LEC'" ;
+				$resultInfo[$i] = $this->execute($sql)[0];
+				//$resultInfo[0]="dept variable is either comp or enge";
+			}
+		}else{
+        	//Query the general course information i.e. timing and capacity
+        	$sql="SELECT * FROM courses where SUBJ LIKE '".$dept."' AND CRSE=".$idnum." AND INSTR_TYPE LIKE 'LEC'" ;
+        	$resultInfo = $this->execute($sql);
+		}
         if(sizeof($resultInfo) == 0){
             $resultInfo[0]="Unable to find course info";
         }
@@ -57,10 +73,11 @@ class Database{
 
         $dept = explode(" ",$fullname)[0];
         $idnum = explode(" ",$fullname)[1];
-
-        //Query the general course information i.e. timing and capacity
-        $sql="SELECT * FROM courses where SUBJ LIKE '".$dept."' AND CRSE=".$idnum." AND TERM_OFFERED LIKE '".$term."'";
-        $resultInfo = $this->execute($sql);   
+		
+		
+       	//Query the general course information i.e. timing and capacity
+       	$sql="SELECT * FROM courses where SUBJ LIKE '".$dept."' AND CRSE=".$idnum." AND TERM_OFFERED LIKE '".$term."'";
+      	$resultInfo = $this->execute($sql);  
         if(sizeof($resultInfo) == 0){
             $resultInfo[0]="error";
         }

@@ -104,14 +104,10 @@
             <input class="courseCheckbox" type="checkbox" name="courseCheckbox">Done<br>
             <input class="registerCheckbox" type="checkbox" name="registerCheckbox">Register
         </li>
-		<li class="course elective" id="elective">
-            <a class="courseLink" href="#"><h4 class="courseTitle">course name</h4></a>
-            <p class="courseDescription"></p>
-            <input disabled="disabled" class="registerCheckbox" type="checkbox" name="registerCheckbox">Register<br>
-            <a class="showElectives">Show Electives</a>
-
-
-        </li>
+		<li class="course elec" id="elec">
+            <h3 class="courseDescription">course name</h3>
+            <p class="courseTime"></p>
+            <input type="checkbox" name="courseTaken">Done</li>
 	</ul>
 	
 	<script src="functions.js"></script>
